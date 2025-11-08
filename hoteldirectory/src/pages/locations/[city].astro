@@ -7,9 +7,10 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = 'https://ntncjdoeutfkkdkzaaif.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50bmNqZG9ldXRma2tka3phYWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1Nzk3MDUsImV4cCI6MjA3ODE1NTcwNX0.AHz3vm6Wz9yLQjzrR0-LELv6V8s5Nacr0OmWt5IzHuo';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 export async function getStaticPaths() {
+  // Create Supabase client inside getStaticPaths
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   // Get unique London areas by postal code
   const { data: postcodeData } = await supabase
     .from('hotels')
@@ -34,6 +35,9 @@ export async function getStaticPaths() {
 }
 
 const { area, displayName } = Astro.props;
+
+// Create Supabase client for component
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Get hotels for this specific London area
 const { data: areaHotels } = await supabase
