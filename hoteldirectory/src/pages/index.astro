@@ -16,24 +16,29 @@ const { data: allHotels } = await supabase
 
 const featuredHotels = allHotels || [];
 
-// Get top London areas for popular destinations
-const { data: postcodeData } = await supabase
+// Get top cities for popular destinations
+const { data: cityData } = await supabase
   .from('hotels')
-  .select('postal_code')
-  .not('postal_code', 'is', null);
+  .select('city')
+  .not('city', 'is', null);
 
-const areaStats = postcodeData?.reduce((acc, hotel) => {
-  const area = hotel.postal_code?.substring(0, 3).trim();
-  if (area && area !== 'Non') {
-    acc[area] = (acc[area] || 0) + 1;
+const cityStats = cityData?.reduce((acc, hotel) => {
+  const city = hotel.city?.trim();
+  if (city && city.length > 2) { // Filter out invalid entries like "7a", "6PZ"
+    acc[city] = (acc[city] || 0) + 1;
   }
   return acc;
 }, {} as Record<string, number>) || {};
 
-const topAreas = Object.entries(areaStats)
+const topCities = Object.entries(cityStats)
   .sort(([,a], [,b]) => b - a)
   .slice(0, 4)
-  .map(([area, count]) => ({ area, count, displayName: `London ${area}` }));
+  .map(([city, count]) => ({
+    city,
+    count,
+    displayName: city,
+    slug: city.toLowerCase().replace(/\s+/g, '-')
+  }));
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -174,23 +179,20 @@ const jsonLd = {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl font-bold text-gray-900 mb-4">
-          Most Expensive Hotel in London by Premium Area
+          Most Expensive Hotel in London and Surrounding Areas
         </h2>
         <p class="text-lg text-gray-600">
-          Explore the most exclusive London areas with the highest concentration of luxury hotels.
+          Explore the top cities and towns in the greater London area with luxury hotel accommodations.
         </p>
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {topAreas.map((areaInfo, index) => (
-          <a href={`/locations/${areaInfo.area.toLowerCase()}`} class="group relative overflow-hidden rounded-lg aspect-square">
+        {topCities.map((cityInfo, index) => (
+          <a href={`/locations/${cityInfo.slug}`} class="group relative overflow-hidden rounded-lg aspect-square">
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
             <div class="absolute bottom-4 left-4 z-20">
-              <h3 class="text-white font-semibold text-lg">{areaInfo.displayName}</h3>
-              <p class="text-white/80 text-sm">{areaInfo.count} luxury hotels</p>
-            </div>
-            <div class="absolute top-3 right-3 z-20 bg-white bg-opacity-20 rounded-lg px-2 py-1">
-              <span class="text-white text-xs font-medium">{areaInfo.area}</span>
+              <h3 class="text-white font-semibold text-lg">{cityInfo.displayName}</h3>
+              <p class="text-white/80 text-sm">{cityInfo.count} hotels</p>
             </div>
             <div class={`w-full h-full group-hover:scale-105 transition-transform duration-300 ${
               index === 0 ? 'bg-gradient-to-br from-purple-400 to-pink-400' :

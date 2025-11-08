@@ -4,62 +4,63 @@ import HotelCard from '@/components/HotelCard.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://ntncjdoeutfkkdkzaaif.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50bmNqZG9ldXRma2tka3phYWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1Nzk3MDUsImV4cCI6MjA3ODE1NTcwNX0.AHz3vm6Wz9yLQjzrR0-LELv6V8s5Nacr0OmWt5IzHuo';
-
 export async function getStaticPaths() {
-  // Create Supabase client inside getStaticPaths
+  // Create Supabase client with credentials inside getStaticPaths
+  const SUPABASE_URL = 'https://ntncjdoeutfkkdkzaaif.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50bmNqZG9ldXRma2tka3phYWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1Nzk3MDUsImV4cCI6MjA3ODE1NTcwNX0.AHz3vm6Wz9yLQjzrR0-LELv6V8s5Nacr0OmWt5IzHuo';
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Get unique London areas by postal code
-  const { data: postcodeData } = await supabase
+  // Get unique cities from the database
+  const { data: cityData } = await supabase
     .from('hotels')
-    .select('postal_code')
-    .not('postal_code', 'is', null);
+    .select('city')
+    .not('city', 'is', null);
 
-  const areas = postcodeData?.reduce((acc, hotel) => {
-    const area = hotel.postal_code?.substring(0, 3).trim();
-    if (area && area !== 'Non' && !acc.includes(area)) {
-      acc.push(area);
+  const cities = cityData?.reduce((acc, hotel) => {
+    const city = hotel.city?.trim();
+    if (city && city.length > 2 && !acc.includes(city)) { // Filter out invalid entries like "7a", "6PZ"
+      acc.push(city);
     }
     return acc;
   }, [] as string[]) || [];
 
-  return areas.map((area) => ({
-    params: { city: area.toLowerCase().replace(/\s+/g, '-') },
+  return cities.map((city) => ({
+    params: { city: city.toLowerCase().replace(/\s+/g, '-') },
     props: {
-      area,
-      displayName: `London ${area}`
+      cityName: city,
+      displayName: city
     },
   }));
 }
 
-const { area, displayName } = Astro.props;
+const { cityName, displayName } = Astro.props;
 
 // Create Supabase client for component
+const SUPABASE_URL = 'https://ntncjdoeutfkkdkzaaif.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50bmNqZG9ldXRma2tka3phYWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1Nzk3MDUsImV4cCI6MjA3ODE1NTcwNX0.AHz3vm6Wz9yLQjzrR0-LELv6V8s5Nacr0OmWt5IzHuo';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Get hotels for this specific London area
-const { data: areaHotels } = await supabase
+// Get hotels for this specific city
+const { data: cityHotels } = await supabase
   .from('hotels')
   .select('*')
-  .ilike('postal_code', `${area}%`);
+  .eq('city', cityName);
 
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'Locations', url: '/locations' },
-  { name: `${displayName} Hotels`, url: `/locations/${area.toLowerCase()}` }
+  { name: `${displayName} Hotels`, url: `/locations/${cityName.toLowerCase().replace(/\s+/g, '-')}` }
 ];
 
-const hotelCount = areaHotels?.length || 0;
+const hotelCount = cityHotels?.length || 0;
 
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "TouristDestination",
   "name": `Most Expensive Hotels in ${displayName}`,
   "description": `Find the most expensive hotels in ${displayName}. Browse ${hotelCount} luxury hotels with detailed information, reviews, and booking options.`,
-  "url": `https://hoteldirectory.com/locations/${area.toLowerCase()}`,
-  "containsPlace": areaHotels?.map(hotel => ({
+  "url": `https://hoteldirectory.com/locations/${cityName.toLowerCase().replace(/\s+/g, '-')}`,
+  "containsPlace": cityHotels?.map(hotel => ({
     "@type": "Hotel",
     "name": hotel.name,
     "address": hotel.full_address,
@@ -71,7 +72,7 @@ const jsonLd = {
 <BaseLayout
   title={`Most Expensive Hotels in ${displayName} - Luxury Accommodations`}
   description={`Find the most expensive hotels in ${displayName} area. Discover ${hotelCount} luxury accommodations with premium amenities, exclusive services, and unparalleled comfort.`}
-  canonical={`https://hoteldirectory.com/locations/${area.toLowerCase()}`}
+  canonical={`https://hoteldirectory.com/locations/${cityName.toLowerCase().replace(/\s+/g, '-')}`}
   jsonLd={jsonLd}
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,7 +83,7 @@ const jsonLd = {
     <div class="bg-gradient-to-r from-primary-600 to-primary-800 text-white rounded-lg p-8 md:p-12 mb-8">
       <div class="max-w-4xl">
         <h1 class="text-3xl md:text-5xl font-bold mb-4">
-          Most Expensive Hotel in London - {displayName}
+          Most Expensive Hotel in {displayName}
         </h1>
         <p class="text-xl md:text-2xl text-primary-100 mb-6">
           Discover {hotelCount} luxury hotels offering premium amenities, exclusive services, and unparalleled comfort
@@ -117,9 +118,9 @@ const jsonLd = {
       </h2>
       <div class="prose prose-lg text-gray-600 max-w-none">
         <p>
-          {displayName} stands as one of London's most prestigious areas, offering an incredible blend of
-          luxury shopping, world-class dining, and exclusive accommodations. Located in the heart of London,
-          this area combines rich history with modern sophistication.
+          {displayName} offers an incredible selection of luxury accommodations and premium hotels.
+          This location provides excellent access to London's attractions and business districts,
+          making it a perfect choice for both leisure and business travelers.
           Our carefully selected {hotelCount} hotels provide the perfect base for exploring everything this magnificent area has to offer.
         </p>
         <p>
@@ -139,7 +140,7 @@ const jsonLd = {
             </svg>
           </div>
           <h3 class="font-semibold text-gray-900 mb-2">Prime Locations</h3>
-          <p class="text-gray-600 text-sm">Hotels in the heart of {displayName}'s exclusive area</p>
+          <p class="text-gray-600 text-sm">Hotels in the heart of {displayName}</p>
         </div>
 
         <div class="text-center">
@@ -229,7 +230,7 @@ const jsonLd = {
 
     <!-- Hotels Grid -->
     <div id="city-hotels-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-      {areaHotels?.map((hotel, index) => (
+      {cityHotels?.map((hotel, index) => (
         <HotelCard hotel={hotel} priority={index < 6} />
       ))}
     </div>
