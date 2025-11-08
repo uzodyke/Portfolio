@@ -1,11 +1,39 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import HotelCard from '@/components/HotelCard.astro';
-import { getAllHotels } from '@/lib/csv-import';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = 'https://ntncjdoeutfkkdkzaaif.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50bmNqZG9ldXRma2tka3phYWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1Nzk3MDUsImV4cCI6MjA3ODE1NTcwNX0.AHz3vm6Wz9yLQjzrR0-LELv6V8s5Nacr0OmWt5IzHuo';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Get featured hotels (first 6 hotels)
-const allHotels = await getAllHotels();
-const featuredHotels = allHotels.slice(0, 6);
+const { data: allHotels } = await supabase
+  .from('hotels')
+  .select('*')
+  .limit(6);
+
+const featuredHotels = allHotels || [];
+
+// Get top London areas for popular destinations
+const { data: postcodeData } = await supabase
+  .from('hotels')
+  .select('postal_code')
+  .not('postal_code', 'is', null);
+
+const areaStats = postcodeData?.reduce((acc, hotel) => {
+  const area = hotel.postal_code?.substring(0, 3).trim();
+  if (area && area !== 'Non') {
+    acc[area] = (acc[area] || 0) + 1;
+  }
+  return acc;
+}, {} as Record<string, number>) || {};
+
+const topAreas = Object.entries(areaStats)
+  .sort(([,a], [,b]) => b - a)
+  .slice(0, 4)
+  .map(([area, count]) => ({ area, count, displayName: `London ${area}` }));
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -22,8 +50,8 @@ const jsonLd = {
 ---
 
 <BaseLayout
-  title="Hotel Directory - Find Your Perfect Hotel Stay"
-  description="Discover the best hotels worldwide. Browse our comprehensive directory with detailed information, reviews, photos, and easy booking options for your perfect stay."
+  title="Most Expensive Hotel in London - Luxury Hotel Directory"
+  description="Find the most expensive hotel in London across premium areas like Mayfair, Kensington, and Westminster. Browse luxury accommodations with exclusive amenities and services."
   canonical="https://hoteldirectory.com"
   jsonLd={jsonLd}
 >
@@ -31,10 +59,10 @@ const jsonLd = {
   <section class="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <h1 class="text-4xl md:text-6xl font-bold mb-6">
-        Find Your Perfect Hotel
+        Most Expensive Hotel in London
       </h1>
       <p class="text-xl md:text-2xl mb-8 text-primary-100">
-        Discover amazing hotels worldwide with detailed information, reviews, and easy booking
+        Discover luxury hotels across London's most prestigious areas with detailed information, reviews, and exclusive booking options
       </p>
 
       <!-- Search Box -->
@@ -42,7 +70,7 @@ const jsonLd = {
         <div class="flex flex-col sm:flex-row gap-4">
           <input
             type="text"
-            placeholder="Search by city, hotel name, or location..."
+            placeholder="Search by London area, hotel name, or postcode..."
             class="flex-grow px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-300"
             aria-label="Search hotels"
           />
@@ -62,10 +90,10 @@ const jsonLd = {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl font-bold text-gray-900 mb-4">
-          Featured Hotels
+          London's Most Expensive Hotels
         </h2>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-          Discover our hand-picked selection of exceptional hotels offering luxury, comfort, and outstanding service.
+          Discover our hand-picked selection of London's most luxurious hotels offering premium amenities, exclusive services, and unparalleled comfort.
         </p>
       </div>
 
@@ -146,49 +174,32 @@ const jsonLd = {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl font-bold text-gray-900 mb-4">
-          Popular Destinations
+          Top London Areas for Luxury Hotels
         </h2>
         <p class="text-lg text-gray-600">
-          Explore hotels in the world's most popular travel destinations.
+          Explore the most exclusive London areas with the highest concentration of luxury hotels.
         </p>
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <a href="/locations/london" class="group relative overflow-hidden rounded-lg aspect-square">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-          <div class="absolute bottom-4 left-4 z-20">
-            <h3 class="text-white font-semibold text-lg">London</h3>
-            <p class="text-white/80 text-sm">Luxury & Heritage</p>
-          </div>
-          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
-        </a>
-
-        <a href="/locations/paris" class="group relative overflow-hidden rounded-lg aspect-square">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-          <div class="absolute bottom-4 left-4 z-20">
-            <h3 class="text-white font-semibold text-lg">Paris</h3>
-            <p class="text-white/80 text-sm">Romance & Elegance</p>
-          </div>
-          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
-        </a>
-
-        <a href="/locations/new-york" class="group relative overflow-hidden rounded-lg aspect-square">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-          <div class="absolute bottom-4 left-4 z-20">
-            <h3 class="text-white font-semibold text-lg">New York</h3>
-            <p class="text-white/80 text-sm">Urban Adventure</p>
-          </div>
-          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
-        </a>
-
-        <a href="/locations/tokyo" class="group relative overflow-hidden rounded-lg aspect-square">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-          <div class="absolute bottom-4 left-4 z-20">
-            <h3 class="text-white font-semibold text-lg">Tokyo</h3>
-            <p class="text-white/80 text-sm">Modern & Traditional</p>
-          </div>
-          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
-        </a>
+        {topAreas.map((areaInfo, index) => (
+          <a href={`/locations/${areaInfo.area.toLowerCase()}`} class="group relative overflow-hidden rounded-lg aspect-square">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+            <div class="absolute bottom-4 left-4 z-20">
+              <h3 class="text-white font-semibold text-lg">{areaInfo.displayName}</h3>
+              <p class="text-white/80 text-sm">{areaInfo.count} luxury hotels</p>
+            </div>
+            <div class="absolute top-3 right-3 z-20 bg-white bg-opacity-20 rounded-lg px-2 py-1">
+              <span class="text-white text-xs font-medium">{areaInfo.area}</span>
+            </div>
+            <div class={`w-full h-full group-hover:scale-105 transition-transform duration-300 ${
+              index === 0 ? 'bg-gradient-to-br from-purple-400 to-pink-400' :
+              index === 1 ? 'bg-gradient-to-br from-blue-400 to-purple-400' :
+              index === 2 ? 'bg-gradient-to-br from-green-400 to-blue-400' :
+              'bg-gradient-to-br from-orange-400 to-red-400'
+            }`}></div>
+          </a>
+        ))}
       </div>
     </div>
   </section>

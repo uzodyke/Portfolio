@@ -1,31 +1,44 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import { getAllHotels } from '@/lib/csv-import';
+import { createClient } from '@supabase/supabase-js';
 
-const allHotels = await getAllHotels();
+const SUPABASE_URL = 'https://ntncjdoeutfkkdkzaaif.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50bmNqZG9ldXRma2tka3phYWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1Nzk3MDUsImV4cCI6MjA3ODE1NTcwNX0.AHz3vm6Wz9yLQjzrR0-LELv6V8s5Nacr0OmWt5IzHuo';
 
-// Get unique cities with hotel counts
-interface CityStats {
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Get London areas by postal code from the database
+const { data: postcodeData } = await supabase
+  .from('hotels')
+  .select('postal_code')
+  .not('postal_code', 'is', null);
+
+// Get unique postal code areas (first 2-3 characters)
+interface AreaStats {
   name: string;
   count: number;
   slug: string;
+  displayName: string;
 }
 
-const cityStats = allHotels.reduce((acc, hotel) => {
-  const city = hotel.city;
-  if (!acc[city]) {
-    acc[city] = {
-      name: city,
-      count: 0,
-      slug: city.toLowerCase().replace(/\s+/g, '-')
-    };
+const areaStats = postcodeData?.reduce((acc, hotel) => {
+  const area = hotel.postal_code?.substring(0, 3).trim();
+  if (area && area !== 'Non') {
+    if (!acc[area]) {
+      acc[area] = {
+        name: area,
+        count: 0,
+        slug: area.toLowerCase().replace(/\s+/g, '-'),
+        displayName: `London ${area}`
+      };
+    }
+    acc[area].count++;
   }
-  acc[city].count++;
   return acc;
-}, {} as Record<string, CityStats>);
+}, {} as Record<string, AreaStats>) || {};
 
-const cities = (Object.values(cityStats) as CityStats[]).sort((a, b) => b.count - a.count);
+const areas = Object.values(areaStats).sort((a, b) => b.count - a.count);
 
 const breadcrumbs = [
   { name: 'Home', url: '/' },
@@ -40,14 +53,14 @@ const jsonLd = {
   "url": "https://hoteldirectory.com/locations",
   "mainEntity": {
     "@type": "ItemList",
-    "numberOfItems": cities.length,
-    "itemListElement": cities.map((city, index) => ({
+    "numberOfItems": areas.length,
+    "itemListElement": areas.map((area, index) => ({
       "@type": "ListItem",
       "position": index + 1,
       "item": {
-        "@type": "City",
-        "name": city.name,
-        "url": `https://hoteldirectory.com/locations/${city.slug}`
+        "@type": "Place",
+        "name": area.displayName,
+        "url": `https://hoteldirectory.com/locations/${area.slug}`
       }
     }))
   }
@@ -56,7 +69,7 @@ const jsonLd = {
 
 <BaseLayout
   title="Hotel Locations - Browse Hotels by City"
-  description={`Explore hotels in ${cities.length} destinations worldwide. Find the perfect accommodation in your preferred city from our comprehensive hotel directory.`}
+  description={`Find the most expensive hotel in London across ${areas.length} premium areas. Explore luxury accommodations from Mayfair to Kensington in our comprehensive hotel directory.`}
   canonical="https://hoteldirectory.com/locations"
   jsonLd={jsonLd}
 >
@@ -67,11 +80,11 @@ const jsonLd = {
     <!-- Header -->
     <div class="text-center mb-12">
       <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-        Explore Hotels by Location
+        Most Expensive Hotel in London - Premium Areas
       </h1>
       <p class="text-lg text-gray-600 max-w-3xl mx-auto">
-        Discover exceptional hotels in {cities.length} destinations worldwide. Each location offers unique
-        accommodations ranging from luxury resorts to boutique properties, ensuring the perfect stay for every traveler.
+        Discover the most expensive hotel in London across {areas.length} luxury areas. From prestigious Mayfair to elegant Kensington,
+        find premium accommodations and boutique properties in London's most exclusive neighborhoods.
       </p>
     </div>
 
@@ -97,27 +110,30 @@ const jsonLd = {
       </div>
     </div>
 
-    <!-- Cities Grid -->
-    <div id="cities-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map((city, index) => (
+    <!-- London Areas Grid -->
+    <div id="areas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {areas.map((area, index) => (
         <a
-          href={`/locations/${city.slug}`}
+          href={`/locations/${area.slug}`}
           class="group bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
         >
-          <!-- City Image Placeholder -->
+          <!-- Area Image Placeholder -->
           <div class="relative h-32 bg-gradient-to-br from-primary-400 to-primary-600">
             <div class="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-all duration-300"></div>
             <div class="absolute bottom-3 left-3">
-              <h3 class="text-white font-semibold text-lg">{city.name}</h3>
+              <h3 class="text-white font-semibold text-lg">{area.displayName}</h3>
+            </div>
+            <div class="absolute top-3 right-3 bg-white bg-opacity-20 rounded-lg px-2 py-1">
+              <span class="text-white text-xs font-medium">{area.name}</span>
             </div>
           </div>
 
-          <!-- City Info -->
+          <!-- Area Info -->
           <div class="p-4">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-gray-600 text-sm">
-                  {city.count} {city.count === 1 ? 'hotel' : 'hotels'}
+                  {area.count} {area.count === 1 ? 'hotel' : 'hotels'}
                 </p>
               </div>
               <div class="text-primary-600 group-hover:text-primary-700 transition-colors">
@@ -140,22 +156,25 @@ const jsonLd = {
       <p class="mt-1 text-sm text-gray-500">Try searching with different keywords.</p>
     </div>
 
-    <!-- Popular Destinations -->
+    <!-- Top London Areas -->
     <div class="mt-16 bg-gray-50 rounded-lg p-8">
       <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">
-        Popular Destinations
+        Premium London Areas with Most Expensive Hotels
       </h2>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {cities.slice(0, 8).map((city) => (
+        {areas.slice(0, 8).map((area) => (
           <a
-            href={`/locations/${city.slug}`}
+            href={`/locations/${area.slug}`}
             class="text-center p-4 bg-white rounded-lg hover:bg-gray-100 transition-colors group"
           >
             <div class="text-lg font-medium text-gray-900 group-hover:text-primary-600 mb-1">
-              {city.name}
+              {area.displayName}
+            </div>
+            <div class="text-xs text-gray-500 mb-1">
+              {area.name}
             </div>
             <div class="text-sm text-gray-600">
-              {city.count} hotels
+              {area.count} hotels
             </div>
           </a>
         ))}
@@ -190,31 +209,32 @@ const jsonLd = {
 </BaseLayout>
 
 <script>
-  // Location search functionality
+  // Area search functionality
   document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('location-search') as HTMLInputElement;
-    const citiesGrid = document.getElementById('cities-grid');
+    const areasGrid = document.getElementById('areas-grid');
     const emptyState = document.getElementById('empty-state');
 
-    if (!searchInput || !citiesGrid || !emptyState) return;
+    if (!searchInput || !areasGrid || !emptyState) return;
 
-    let allCityCards: Element[] = [];
+    let allAreaCards: Element[] = [];
 
-    // Extract all city cards
-    const extractCityCards = () => {
-      allCityCards = Array.from(citiesGrid.querySelectorAll('a'));
+    // Extract all area cards
+    const extractAreaCards = () => {
+      allAreaCards = Array.from(areasGrid.querySelectorAll('a'));
     };
 
-    const filterCities = () => {
+    const filterAreas = () => {
       const searchTerm = searchInput.value.toLowerCase();
 
-      const filteredCards = allCityCards.filter(card => {
-        const cityName = card.querySelector('h3')?.textContent?.toLowerCase() || '';
-        return cityName.includes(searchTerm);
+      const filteredCards = allAreaCards.filter(card => {
+        const areaName = card.querySelector('h3')?.textContent?.toLowerCase() || '';
+        const postcode = card.querySelector('span')?.textContent?.toLowerCase() || '';
+        return areaName.includes(searchTerm) || postcode.includes(searchTerm);
       });
 
       // Hide all cards
-      allCityCards.forEach(card => {
+      allAreaCards.forEach(card => {
         (card as HTMLElement).style.display = 'none';
       });
 
@@ -232,14 +252,14 @@ const jsonLd = {
     };
 
     // Initialize
-    extractCityCards();
+    extractAreaCards();
 
     // Search event listener
     let searchTimeout: number;
     searchInput.addEventListener('input', () => {
       // Debounce search
       clearTimeout(searchTimeout);
-      searchTimeout = window.setTimeout(filterCities, 300);
+      searchTimeout = window.setTimeout(filterAreas, 300);
     });
   });
 </script>
