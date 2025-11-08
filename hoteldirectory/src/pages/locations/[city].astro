@@ -1,0 +1,336 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HotelCard from '@/components/HotelCard.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { getHotelsByCity, getAllHotels } from '@/lib/csv-import';
+
+export async function getStaticPaths() {
+  const allHotels = await getAllHotels();
+
+  // Get unique cities
+  const cities = Array.from(new Set(allHotels.map(hotel => hotel.city)));
+
+  return cities.map((city) => ({
+    params: { city: city.toLowerCase().replace(/\s+/g, '-') },
+    props: {
+      city,
+      originalCity: city
+    },
+  }));
+}
+
+const { city, originalCity } = Astro.props;
+const cityHotels = await getHotelsByCity(originalCity);
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Locations', url: '/locations' },
+  { name: `${originalCity} Hotels`, url: `/locations/${city}` }
+];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "TouristDestination",
+  "name": `${originalCity} Hotels`,
+  "description": `Find the best hotels in ${originalCity}. Browse ${cityHotels.length} hotels with detailed information, reviews, and booking options.`,
+  "url": `https://hoteldirectory.com/locations/${city}`,
+  "containsPlace": cityHotels.map(hotel => ({
+    "@type": "Hotel",
+    "name": hotel.name,
+    "address": hotel.full_address,
+    "url": `https://hoteldirectory.com/hotels/${hotel.slug}`
+  }))
+};
+---
+
+<BaseLayout
+  title={`Hotels in ${originalCity} - Find Your Perfect Stay`}
+  description={`Discover ${cityHotels.length} exceptional hotels in ${originalCity}. Compare prices, read reviews, and book your perfect accommodation with detailed information and photos.`}
+  canonical={`https://hoteldirectory.com/locations/${city}`}
+  jsonLd={jsonLd}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumbs -->
+    <Breadcrumbs items={breadcrumbs} />
+
+    <!-- City Hero Section -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-800 text-white rounded-lg p-8 md:p-12 mb-8">
+      <div class="max-w-4xl">
+        <h1 class="text-3xl md:text-5xl font-bold mb-4">
+          Hotels in {originalCity}
+        </h1>
+        <p class="text-xl md:text-2xl text-primary-100 mb-6">
+          Discover {cityHotels.length} exceptional hotels offering luxury, comfort, and outstanding service
+        </p>
+        <div class="flex flex-wrap items-center gap-6 text-primary-200">
+          <div class="flex items-center">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span>{cityHotels.length} Hotels Available</span>
+          </div>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>24/7 Support Available</span>
+          </div>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Best Price Guarantee</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- City Description -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 md:p-8 mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+        Why Choose {originalCity} for Your Stay?
+      </h2>
+      <div class="prose prose-lg text-gray-600 max-w-none">
+        <p>
+          {originalCity} stands as one of the world's premier destinations, offering an incredible blend of
+          {originalCity === 'London' ? 'rich history, royal heritage, and modern innovation' :
+           originalCity === 'Paris' ? 'romantic charm, world-class cuisine, and artistic treasures' :
+           originalCity === 'New York' ? 'urban energy, cultural diversity, and iconic landmarks' :
+           'unique culture, exceptional hospitality, and unforgettable experiences'}.
+          Our carefully selected {cityHotels.length} hotels provide the perfect base for exploring everything this magnificent city has to offer.
+        </p>
+        <p>
+          Whether you're visiting for business or leisure, our hotel directory features accommodations ranging from
+          boutique luxury properties to family-friendly establishments, ensuring you find the perfect match for your
+          travel needs and budget. Each listing includes comprehensive information, authentic guest reviews, and
+          direct booking options for your convenience.
+        </p>
+      </div>
+
+      <!-- Key Features for City -->
+      <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="text-center">
+          <div class="bg-primary-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Prime Locations</h3>
+          <p class="text-gray-600 text-sm">Hotels in the heart of {originalCity}'s best neighborhoods</p>
+        </div>
+
+        <div class="text-center">
+          <div class="bg-primary-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Guest Approved</h3>
+          <p class="text-gray-600 text-sm">Highly rated by thousands of satisfied travelers</p>
+        </div>
+
+        <div class="text-center">
+          <div class="bg-primary-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Instant Booking</h3>
+          <p class="text-gray-600 text-sm">Quick and secure reservation process</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Sort Section -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label for="search-city" class="block text-sm font-medium text-gray-700 mb-2">
+            Search Hotels
+          </label>
+          <input
+            type="text"
+            id="search-city"
+            placeholder="Hotel name..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+        </div>
+
+        <div>
+          <label for="price-range" class="block text-sm font-medium text-gray-700 mb-2">
+            Price Range
+          </label>
+          <select
+            id="price-range"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            <option value="">All Prices</option>
+            <option value="budget">Budget Friendly</option>
+            <option value="mid">Mid-Range</option>
+            <option value="luxury">Luxury</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="sort-city" class="block text-sm font-medium text-gray-700 mb-2">
+            Sort By
+          </label>
+          <select
+            id="sort-city"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            <option value="name">Hotel Name</option>
+            <option value="reviews">Most Reviewed</option>
+            <option value="newest">Recently Added</option>
+          </select>
+        </div>
+
+        <div class="flex items-end">
+          <button
+            type="button"
+            id="apply-city-filters"
+            class="w-full px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Count -->
+    <div class="mb-6">
+      <p class="text-gray-600">
+        Showing <span id="city-results-count">{cityHotels.length}</span> hotels in {originalCity}
+      </p>
+    </div>
+
+    <!-- Hotels Grid -->
+    <div id="city-hotels-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      {cityHotels.map((hotel, index) => (
+        <HotelCard hotel={hotel} priority={index < 6} />
+      ))}
+    </div>
+
+    <!-- Empty State -->
+    {cityHotels.length === 0 && (
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No hotels found</h3>
+        <p class="mt-1 text-sm text-gray-500">We're working on adding more hotels to {originalCity}.</p>
+        <div class="mt-6">
+          <a
+            href="/hotels"
+            class="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+          >
+            Browse All Hotels
+          </a>
+        </div>
+      </div>
+    )}
+
+    <!-- Call to Action -->
+    <div class="bg-gray-50 rounded-lg p-8 text-center">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+        Ready to Book Your {originalCity} Hotel?
+      </h2>
+      <p class="text-gray-600 mb-6">
+        Join thousands of satisfied travelers who have found their perfect accommodation through our directory.
+        Enjoy exclusive deals, instant confirmation, and 24/7 customer support.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a
+          href="/hotels"
+          class="inline-flex items-center px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+        >
+          Explore More Cities
+        </a>
+        <a
+          href="#"
+          class="inline-flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+        >
+          Contact Support
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // City page filtering functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search-city') as HTMLInputElement;
+    const priceRange = document.getElementById('price-range') as HTMLSelectElement;
+    const sortBy = document.getElementById('sort-city') as HTMLSelectElement;
+    const applyButton = document.getElementById('apply-city-filters');
+    const hotelsGrid = document.getElementById('city-hotels-grid');
+    const resultsCount = document.getElementById('city-results-count');
+
+    let allCityHotelsData: any[] = [];
+
+    // Extract hotel data from existing DOM elements
+    const extractCityHotelData = () => {
+      const hotelCards = hotelsGrid?.querySelectorAll('article');
+      allCityHotelsData = Array.from(hotelCards || []).map(card => {
+        const nameElement = card.querySelector('h3');
+        const reviewsElement = card.querySelector('.absolute.top-2.right-2');
+
+        return {
+          element: card,
+          name: nameElement?.textContent?.trim() || '',
+          reviews: reviewsElement ? parseInt(reviewsElement.textContent?.replace(/\D/g, '') || '0') : 0
+        };
+      });
+    };
+
+    const filterAndSortCityHotels = () => {
+      if (!searchInput || !priceRange || !sortBy || !hotelsGrid || !resultsCount) return;
+
+      const searchTerm = searchInput.value.toLowerCase();
+      const selectedPrice = priceRange.value;
+      const sortOption = sortBy.value;
+
+      let filteredHotels = allCityHotelsData.filter(hotel => {
+        const matchesSearch = hotel.name.toLowerCase().includes(searchTerm);
+
+        // Price filtering would require additional data
+        // For now, just filter by search term
+        return matchesSearch;
+      });
+
+      // Sort hotels
+      switch (sortOption) {
+        case 'reviews':
+          filteredHotels.sort((a, b) => b.reviews - a.reviews);
+          break;
+        case 'newest':
+          filteredHotels.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        default: // name
+          filteredHotels.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      // Update grid
+      hotelsGrid.innerHTML = '';
+      filteredHotels.forEach(hotel => {
+        hotelsGrid.appendChild(hotel.element);
+      });
+
+      // Update count
+      resultsCount.textContent = filteredHotels.length.toString();
+    };
+
+    // Initialize
+    extractCityHotelData();
+
+    // Event listeners
+    applyButton?.addEventListener('click', filterAndSortCityHotels);
+
+    let searchTimeout: number;
+    searchInput?.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = window.setTimeout(filterAndSortCityHotels, 300);
+    });
+  });
+</script>

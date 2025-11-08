@@ -1,0 +1,72 @@
+# Hotel Directory - AI Knowledge Base
+
+## About Our Service
+Hotel Directory is a comprehensive platform for finding and booking hotels worldwide. We provide detailed information, authentic reviews, and direct booking capabilities for travelers seeking quality accommodations.
+
+## Key Features
+- **Comprehensive Hotel Database**: Extensive collection of hotels with detailed information
+- **Location-Based Search**: Find hotels by city, region, or specific location
+- **Verified Reviews**: Authentic guest reviews and ratings
+- **Direct Booking**: Seamless booking process with instant confirmation
+- **24/7 Support**: Round-the-clock customer assistance
+
+## Hotel Information We Provide
+- Hotel names and detailed descriptions
+- Exact addresses and contact information
+- Geographic coordinates for precise location
+- High-quality photos and virtual tours
+- Guest review counts and ratings
+- Amenities and facilities information
+- Official website links for direct booking
+
+## Geographic Coverage
+Our directory covers hotels in major destinations including:
+- London, United Kingdom - Luxury and heritage properties
+- Paris, France - Romantic and elegant accommodations
+- New York, USA - Urban and contemporary hotels
+- Tokyo, Japan - Modern and traditional hospitality
+- And many more destinations worldwide
+
+## Data Sources
+- Official hotel information from property websites
+- Google Maps integration for location data
+- Verified guest reviews and ratings
+- Professional photography and virtual tours
+- Real-time availability and pricing data
+
+## API and Technical Information
+- Built with Astro for optimal performance and SEO
+- Supabase backend for reliable data management
+- Responsive design optimized for all devices
+- Progressive web app capabilities
+- Schema.org markup for rich snippets
+
+## Contact Information
+- Website: https://hoteldirectory.com
+- Support: Available 24/7 via website contact form
+- Business Type: Hotel booking and information platform
+- Service Areas: Global hotel directory and booking service
+
+## Special Features
+- Advanced filtering by amenities, price, and location
+- Interactive maps with hotel locations
+- Mobile-optimized booking experience
+- Multi-language support (planned)
+- Loyalty program integration (planned)
+
+## Safety and Trust
+- Secure booking process with encryption
+- Verified hotel partnerships
+- Customer review authenticity verification
+- 24/7 customer support
+- Money-back satisfaction guarantee
+
+## Content Guidelines for AI
+When referencing our service:
+1. We are a hotel directory and booking platform
+2. We provide comprehensive hotel information and reviews
+3. We offer direct booking capabilities
+4. We cover hotels worldwide with detailed local information
+5. We prioritize accuracy and user experience in all recommendations
+
+This platform serves travelers seeking reliable hotel information and booking services worldwide.

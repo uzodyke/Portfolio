@@ -1,0 +1,86 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: string;
+  noindex?: boolean;
+  jsonLd?: any;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage = '/og-default.jpg',
+  ogType = 'website',
+  noindex = false,
+  jsonLd
+} = Astro.props;
+
+const site = 'https://hoteldirectory.com';
+const fullTitle = title.includes('Hotel Directory') ? title : `${title} | Hotel Directory`;
+---
+
+<!-- Primary Meta Tags -->
+<meta name="title" content={fullTitle}>
+<meta name="description" content={description}>
+<meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'}>
+{canonical && <link rel="canonical" href={canonical}>}
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content={ogType}>
+<meta property="og:title" content={fullTitle}>
+<meta property="og:description" content={description}>
+<meta property="og:image" content={`${site}${ogImage}`}>
+{canonical && <meta property="og:url" content={canonical}>}
+<meta property="og:site_name" content="Hotel Directory">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content={fullTitle}>
+<meta name="twitter:description" content={description}>
+<meta name="twitter:image" content={`${site}${ogImage}`}>
+
+<!-- Additional SEO Meta Tags -->
+<meta name="author" content="Hotel Directory">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#3b82f6">
+
+<!-- Preconnect to Google for better performance -->
+<link rel="preconnect" href="https://www.google.com">
+<link rel="preconnect" href="https://maps.googleapis.com">
+<link rel="dns-prefetch" href="//fonts.googleapis.com">
+<link rel="dns-prefetch" href="//lh3.googleusercontent.com">
+
+<!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+<!-- JSON-LD Structured Data -->
+{jsonLd && (
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+)}
+
+<!-- Critical CSS for above-the-fold content -->
+<style is:inline>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    background-color: #ffffff;
+  }
+
+  .header {
+    background: #1e3a8a;
+    color: white;
+    padding: 1rem;
+  }
+
+  .loading {
+    min-height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>

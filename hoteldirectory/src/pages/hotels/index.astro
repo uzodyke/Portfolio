@@ -1,0 +1,231 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HotelCard from '@/components/HotelCard.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { getAllHotels } from '@/lib/csv-import';
+
+const allHotels = await getAllHotels();
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'All Hotels', url: '/hotels' }
+];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "All Hotels - Hotel Directory",
+  "description": "Browse our complete collection of hotels worldwide. Find detailed information, reviews, and booking options.",
+  "url": "https://hoteldirectory.com/hotels",
+  "mainEntity": {
+    "@type": "ItemList",
+    "numberOfItems": allHotels.length,
+    "itemListElement": allHotels.map((hotel, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Hotel",
+        "name": hotel.name,
+        "address": hotel.full_address,
+        "url": `https://hoteldirectory.com/hotels/${hotel.slug}`
+      }
+    }))
+  }
+};
+---
+
+<BaseLayout
+  title="All Hotels - Browse Complete Hotel Directory"
+  description={`Browse our complete collection of ${allHotels.length} hotels worldwide. Find detailed information, reviews, photos, and booking options for your perfect stay.`}
+  canonical="https://hoteldirectory.com/hotels"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumbs -->
+    <Breadcrumbs items={breadcrumbs} />
+
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">
+        All Hotels
+      </h1>
+      <p class="text-lg text-gray-600 mb-6">
+        Discover our complete collection of {allHotels.length} hotels worldwide. Each listing includes detailed information, reviews, and direct booking options.
+      </p>
+
+      <!-- Filters and Search -->
+      <div class="bg-white rounded-lg shadow-sm border p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+              Search Hotels
+            </label>
+            <input
+              type="text"
+              id="search"
+              placeholder="Hotel name or location..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+
+          <div>
+            <label for="city-filter" class="block text-sm font-medium text-gray-700 mb-2">
+              City
+            </label>
+            <select
+              id="city-filter"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">All Cities</option>
+              <option value="London">London</option>
+              <option value="Paris">Paris</option>
+              <option value="New York">New York</option>
+              <option value="Tokyo">Tokyo</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="sort-by" class="block text-sm font-medium text-gray-700 mb-2">
+              Sort By
+            </label>
+            <select
+              id="sort-by"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="name">Name (A-Z)</option>
+              <option value="reviews">Most Reviewed</option>
+              <option value="newest">Newest First</option>
+            </select>
+          </div>
+
+          <div class="flex items-end">
+            <button
+              type="button"
+              id="apply-filters"
+              class="w-full px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Count -->
+    <div class="mb-6">
+      <p class="text-gray-600">
+        Showing <span id="results-count">{allHotels.length}</span> hotels
+      </p>
+    </div>
+
+    <!-- Hotels Grid -->
+    <div id="hotels-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {allHotels.map((hotel, index) => (
+        <HotelCard hotel={hotel} priority={index < 6} />
+      ))}
+    </div>
+
+    <!-- Load More Button (for future pagination) -->
+    <div class="text-center mt-12">
+      <button
+        type="button"
+        class="inline-flex items-center px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+        style="display: none;"
+      >
+        Load More Hotels
+        <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // Client-side filtering and search functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search') as HTMLInputElement;
+    const cityFilter = document.getElementById('city-filter') as HTMLSelectElement;
+    const sortBy = document.getElementById('sort-by') as HTMLSelectElement;
+    const applyButton = document.getElementById('apply-filters');
+    const hotelsGrid = document.getElementById('hotels-grid');
+    const resultsCount = document.getElementById('results-count');
+
+    let allHotelsData: any[] = [];
+
+    // Extract hotel data from existing DOM elements
+    const extractHotelData = () => {
+      const hotelCards = hotelsGrid?.querySelectorAll('article');
+      allHotelsData = Array.from(hotelCards || []).map(card => {
+        const nameElement = card.querySelector('h3');
+        const addressElement = card.querySelector('[itemprop="address"]');
+        const reviewsElement = card.querySelector('.absolute.top-2.right-2');
+
+        return {
+          element: card,
+          name: nameElement?.textContent?.trim() || '',
+          address: addressElement?.textContent?.trim() || '',
+          reviews: reviewsElement ? parseInt(reviewsElement.textContent?.replace(/\D/g, '') || '0') : 0
+        };
+      });
+    };
+
+    const filterAndSortHotels = () => {
+      if (!searchInput || !cityFilter || !sortBy || !hotelsGrid || !resultsCount) return;
+
+      const searchTerm = searchInput.value.toLowerCase();
+      const selectedCity = cityFilter.value.toLowerCase();
+      const sortOption = sortBy.value;
+
+      let filteredHotels = allHotelsData.filter(hotel => {
+        const matchesSearch = hotel.name.toLowerCase().includes(searchTerm) ||
+                             hotel.address.toLowerCase().includes(searchTerm);
+        const matchesCity = !selectedCity || hotel.address.toLowerCase().includes(selectedCity);
+
+        return matchesSearch && matchesCity;
+      });
+
+      // Sort hotels
+      switch (sortOption) {
+        case 'reviews':
+          filteredHotels.sort((a, b) => b.reviews - a.reviews);
+          break;
+        case 'newest':
+          // For now, reverse alphabetical as a placeholder
+          filteredHotels.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        default: // name
+          filteredHotels.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      // Update grid
+      hotelsGrid.innerHTML = '';
+      filteredHotels.forEach(hotel => {
+        hotelsGrid.appendChild(hotel.element);
+      });
+
+      // Update count
+      resultsCount.textContent = filteredHotels.length.toString();
+    };
+
+    // Initialize
+    extractHotelData();
+
+    // Event listeners
+    applyButton?.addEventListener('click', filterAndSortHotels);
+
+    searchInput?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        filterAndSortHotels();
+      }
+    });
+
+    // Real-time search
+    let searchTimeout: number;
+    searchInput?.addEventListener('input', () => {
+      // Debounce search
+      clearTimeout(searchTimeout);
+      searchTimeout = window.setTimeout(filterAndSortHotels, 300);
+    });
+  });
+</script>

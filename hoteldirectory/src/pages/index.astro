@@ -1,0 +1,219 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HotelCard from '@/components/HotelCard.astro';
+import { getAllHotels } from '@/lib/csv-import';
+
+// Get featured hotels (first 6 hotels)
+const allHotels = await getAllHotels();
+const featuredHotels = allHotels.slice(0, 6);
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Hotel Directory",
+  "description": "Find the perfect hotel for your stay. Comprehensive hotel directory with detailed information, reviews, and booking options.",
+  "url": "https://hoteldirectory.com",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://hoteldirectory.com/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
+---
+
+<BaseLayout
+  title="Hotel Directory - Find Your Perfect Hotel Stay"
+  description="Discover the best hotels worldwide. Browse our comprehensive directory with detailed information, reviews, photos, and easy booking options for your perfect stay."
+  canonical="https://hoteldirectory.com"
+  jsonLd={jsonLd}
+>
+  <!-- Hero Section -->
+  <section class="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h1 class="text-4xl md:text-6xl font-bold mb-6">
+        Find Your Perfect Hotel
+      </h1>
+      <p class="text-xl md:text-2xl mb-8 text-primary-100">
+        Discover amazing hotels worldwide with detailed information, reviews, and easy booking
+      </p>
+
+      <!-- Search Box -->
+      <div class="max-w-2xl mx-auto">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Search by city, hotel name, or location..."
+            class="flex-grow px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-300"
+            aria-label="Search hotels"
+          />
+          <button
+            type="button"
+            class="px-6 py-3 bg-white text-primary-600 font-semibold rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-300 transition-colors"
+          >
+            Search Hotels
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Hotels Section -->
+  <section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-900 mb-4">
+          Featured Hotels
+        </h2>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          Discover our hand-picked selection of exceptional hotels offering luxury, comfort, and outstanding service.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {featuredHotels.map((hotel, index) => (
+          <HotelCard hotel={hotel} priority={index < 3} />
+        ))}
+      </div>
+
+      <div class="text-center mt-12">
+        <a
+          href="/hotels"
+          class="inline-flex items-center px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+        >
+          View All Hotels
+          <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-16 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-900 mb-4">
+          Why Choose Our Hotel Directory?
+        </h2>
+        <p class="text-lg text-gray-600">
+          We make finding and booking the perfect hotel simple and reliable.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Comprehensive Search</h3>
+          <p class="text-gray-600">
+            Find hotels by location, amenities, price range, and guest ratings with our advanced search features.
+          </p>
+        </div>
+
+        <div class="text-center">
+          <div class="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Trusted Reviews</h3>
+          <p class="text-gray-600">
+            Read authentic reviews from verified guests to make informed decisions about your stay.
+          </p>
+        </div>
+
+        <div class="text-center">
+          <div class="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">24/7 Support</h3>
+          <p class="text-gray-600">
+            Our customer support team is available around the clock to assist with your booking needs.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Popular Destinations -->
+  <section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-900 mb-4">
+          Popular Destinations
+        </h2>
+        <p class="text-lg text-gray-600">
+          Explore hotels in the world's most popular travel destinations.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <a href="/locations/london" class="group relative overflow-hidden rounded-lg aspect-square">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+          <div class="absolute bottom-4 left-4 z-20">
+            <h3 class="text-white font-semibold text-lg">London</h3>
+            <p class="text-white/80 text-sm">Luxury & Heritage</p>
+          </div>
+          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
+        </a>
+
+        <a href="/locations/paris" class="group relative overflow-hidden rounded-lg aspect-square">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+          <div class="absolute bottom-4 left-4 z-20">
+            <h3 class="text-white font-semibold text-lg">Paris</h3>
+            <p class="text-white/80 text-sm">Romance & Elegance</p>
+          </div>
+          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
+        </a>
+
+        <a href="/locations/new-york" class="group relative overflow-hidden rounded-lg aspect-square">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+          <div class="absolute bottom-4 left-4 z-20">
+            <h3 class="text-white font-semibold text-lg">New York</h3>
+            <p class="text-white/80 text-sm">Urban Adventure</p>
+          </div>
+          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
+        </a>
+
+        <a href="/locations/tokyo" class="group relative overflow-hidden rounded-lg aspect-square">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+          <div class="absolute bottom-4 left-4 z-20">
+            <h3 class="text-white font-semibold text-lg">Tokyo</h3>
+            <p class="text-white/80 text-sm">Modern & Traditional</p>
+          </div>
+          <div class="bg-gray-200 w-full h-full group-hover:scale-105 transition-transform duration-300"></div>
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  // Add search functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.querySelector('input[type="text"]');
+    const searchButton = document.querySelector('button');
+
+    if (searchInput && searchButton) {
+      const performSearch = () => {
+        const query = (searchInput as HTMLInputElement).value.trim();
+        if (query) {
+          window.location.href = `/search?q=${encodeURIComponent(query)}`;
+        }
+      };
+
+      searchButton.addEventListener('click', performSearch);
+      searchInput.addEventListener('keypress', (e: Event) => {
+        if ((e as KeyboardEvent).key === 'Enter') {
+          performSearch();
+        }
+      });
+    }
+  });
+</script>

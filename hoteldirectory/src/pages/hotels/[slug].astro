@@ -1,0 +1,301 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { getHotelBySlug, getAllHotels } from '@/lib/csv-import';
+import type { Hotel } from '@/types/hotel';
+
+export async function getStaticPaths() {
+  const allHotels = await getAllHotels();
+
+  return allHotels.map((hotel) => ({
+    params: { slug: hotel.slug },
+    props: { hotel },
+  }));
+}
+
+const { slug } = Astro.params;
+const { hotel } = Astro.props as { hotel: Hotel };
+
+if (!hotel) {
+  return Astro.redirect('/404');
+}
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Hotels', url: '/hotels' },
+  { name: hotel.name, url: `/hotels/${hotel.slug}` }
+];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Hotel",
+  "name": hotel.name,
+  "description": `${hotel.name} located in ${hotel.city}. ${hotel.reviews ? `Rated by ${hotel.reviews} guests.` : ''} Contact: ${hotel.phone || 'N/A'}`,
+  "url": `https://hoteldirectory.com/hotels/${hotel.slug}`,
+  "image": hotel.photo,
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": hotel.street,
+    "addressLocality": hotel.city,
+    "postalCode": hotel.postal_code,
+    "addressCountry": hotel.country
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": hotel.latitude,
+    "longitude": hotel.longitude
+  },
+  "telephone": hotel.phone,
+  "aggregateRating": hotel.reviews ? {
+    "@type": "AggregateRating",
+    "ratingValue": "4.5",
+    "reviewCount": hotel.reviews
+  } : undefined
+};
+
+// const mapUrl = `https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(hotel.full_address)}`;
+---
+
+<BaseLayout
+  title={`${hotel.name} - ${hotel.city} | Hotel Directory`}
+  description={`${hotel.name} in ${hotel.city}. ${hotel.reviews ? `${hotel.reviews} reviews.` : ''} Located at ${hotel.full_address}. ${hotel.phone ? `Contact: ${hotel.phone}.` : ''}`}
+  canonical={`https://hoteldirectory.com/hotels/${hotel.slug}`}
+  ogImage={hotel.photo || undefined}
+  jsonLd={jsonLd}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumbs -->
+    <Breadcrumbs items={breadcrumbs} />
+
+    <!-- Hotel Header -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+      <!-- Hero Image -->
+      <div class="relative h-64 md:h-96">
+        <img
+          src={hotel.photo || '/placeholder-hotel.jpg'}
+          alt={`${hotel.name} exterior view`}
+          class="w-full h-full object-cover"
+          loading="eager"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+        <div class="absolute bottom-6 left-6 text-white">
+          <h1 class="text-3xl md:text-4xl font-bold mb-2">
+            {hotel.name}
+          </h1>
+          <div class="flex items-center text-white/90">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>{hotel.city}, {hotel.country}</span>
+          </div>
+        </div>
+
+        {hotel.reviews && (
+          <div class="absolute top-6 right-6 bg-white rounded-lg px-4 py-2">
+            <div class="flex items-center">
+              <span class="text-yellow-500 mr-1">⭐</span>
+              <span class="font-semibold text-gray-900">{hotel.reviews}</span>
+              <span class="text-gray-600 text-sm ml-1">reviews</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <!-- Hotel Information -->
+      <div class="p-6 md:p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Main Information -->
+          <div class="lg:col-span-2">
+            <div class="mb-6">
+              <h2 class="text-2xl font-semibold text-gray-900 mb-4">About This Hotel</h2>
+              <p class="text-gray-600 text-lg leading-relaxed">
+                Experience luxury and comfort at {hotel.name}, located in the heart of {hotel.city}.
+                This exceptional hotel offers world-class amenities and service that will make your stay unforgettable.
+                {hotel.reviews && ` With ${hotel.reviews} positive reviews from our guests,`}
+                {hotel.name} stands as a premier choice for travelers seeking quality accommodation.
+              </p>
+            </div>
+
+            <!-- Features & Amenities -->
+            <div class="mb-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-4">Features & Amenities</h3>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="flex items-center">
+                  <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="text-gray-700">24/7 Reception</span>
+                </div>
+                <div class="flex items-center">
+                  <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="text-gray-700">Free WiFi</span>
+                </div>
+                <div class="flex items-center">
+                  <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="text-gray-700">Concierge Service</span>
+                </div>
+                <div class="flex items-center">
+                  <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="text-gray-700">Room Service</span>
+                </div>
+                <div class="flex items-center">
+                  <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="text-gray-700">Business Center</span>
+                </div>
+                <div class="flex items-center">
+                  <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="text-gray-700">Premium Location</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar Information -->
+          <div class="lg:col-span-1">
+            <div class="bg-gray-50 rounded-lg p-6 sticky top-8">
+              <h3 class="text-xl font-semibold text-gray-900 mb-4">Hotel Details</h3>
+
+              <div class="space-y-4">
+                <!-- Address -->
+                <div>
+                  <h4 class="text-sm font-medium text-gray-500 mb-1">Address</h4>
+                  <p class="text-gray-900">{hotel.full_address}</p>
+                </div>
+
+                <!-- Phone -->
+                {hotel.phone && (
+                  <div>
+                    <h4 class="text-sm font-medium text-gray-500 mb-1">Phone</h4>
+                    <a
+                      href={`tel:${hotel.phone}`}
+                      class="text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      {hotel.phone}
+                    </a>
+                  </div>
+                )}
+
+                <!-- Website -->
+                {hotel.site && (
+                  <div>
+                    <h4 class="text-sm font-medium text-gray-500 mb-1">Website</h4>
+                    <a
+                      href={hotel.site}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-primary-600 hover:text-primary-700 font-medium break-all"
+                    >
+                      Visit Official Website
+                    </a>
+                  </div>
+                )}
+
+                <!-- Reviews -->
+                {hotel.reviews && (
+                  <div>
+                    <h4 class="text-sm font-medium text-gray-500 mb-1">Guest Reviews</h4>
+                    <p class="text-gray-900">{hotel.reviews} reviews</p>
+                  </div>
+                )}
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="mt-6 space-y-3">
+                {hotel.site && (
+                  <a
+                    href={hotel.site}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="w-full bg-primary-600 text-white text-center px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors inline-block"
+                  >
+                    Book Now
+                  </a>
+                )}
+
+                <a
+                  href={`https://maps.google.com/?q=${encodeURIComponent(hotel.full_address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="w-full bg-gray-200 text-gray-800 text-center px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors inline-block"
+                >
+                  View on Map
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location & Map Section -->
+    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8 mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-6">Location & Nearby</h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 mb-4">About the Area</h3>
+          <p class="text-gray-600 mb-4">
+            {hotel.name} is strategically located in {hotel.city}, providing easy access to major attractions,
+            shopping districts, and transportation hubs. The hotel's prime location makes it perfect for both
+            business and leisure travelers.
+          </p>
+
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900">Coordinates</h4>
+            <p class="text-gray-600">
+              Latitude: {hotel.latitude}<br />
+              Longitude: {hotel.longitude}
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Map View</h3>
+          <div class="bg-gray-200 h-64 rounded-lg flex items-center justify-center">
+            <div class="text-center text-gray-600">
+              <svg class="h-12 w-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              </svg>
+              <p>Interactive map would be displayed here</p>
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(hotel.full_address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                View on Google Maps
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Hotels -->
+    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-6">More Hotels in {hotel.city}</h2>
+      <div class="text-center">
+        <a
+          href={`/locations/${hotel.city.toLowerCase().replace(/\s+/g, '-')}`}
+          class="inline-flex items-center px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+        >
+          Explore More Hotels in {hotel.city}
+          <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
